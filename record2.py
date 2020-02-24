@@ -100,11 +100,18 @@ if __name__ == "__main__":
                          'depth_scale': profile.get_device().first_depth_sensor().get_depth_scale()
                          }
 
-    with open(folder+'intrinsics.json', 'w') as fp:
+    with open(os.path.join(folder, 'intrinsics.json'), 'w') as fp:
         json.dump(camera_parameters, fp)
 
     align_to = rs.stream.color
     align = rs.align(align_to)
+
+    if warn_user:
+        # warn user
+        import winsound
+        duration = 500  # milliseconds
+        freq = 570  # Hz
+        winsound.Beep(freq, duration)
 
     T_start = time.time()
     while True:

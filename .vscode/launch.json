@@ -11,6 +11,27 @@
             "program": "${file}",
             "console": "integratedTerminal",
             // "args": ["all"]
+        },
+        {
+            "name": "RealSense Record",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/record2.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--warn_user",
+                "True",
+                "--record_duration",
+                "30"
+            ]
+        },
+        {
+            "name": "register segment",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["all"]
         }
     ]
 }

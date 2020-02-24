@@ -37,7 +37,7 @@ max_correspondence_distance_fine = voxel_size * 1.5
 # Voxel size for the complete mesh
 voxel_Radius = VOXEL_R
 
-# Point considered an outlier if more than inlier_Radius away from other points  
+# Point considered an outlier if more than inlier_Radius away from other points
 inlier_Radius = voxel_Radius * 2.5
 
 # search for up to N frames for registration, odometry only N=1, all frames N = np.inf
@@ -47,73 +47,75 @@ FILLBOTTOM = True
 
 plane_equation = None
 
+
 def post_process(originals, voxel_Radius, inlier_Radius):
-     """
-    Merge segments so that new points will not be add to the merged
-    model if within voxel_Radius to the existing points, and keep a vote
-    for if the point is issolated outside the radius of inlier_Radius at 
-    the timeof the merge
-
-    Parameters
-    ----------
-    originals : List of open3d.Pointcloud classe
-      6D pontcloud of the segments transformed into the world frame
-    voxel_Radius : float
-      Reject duplicate point if the new point lies within the voxel radius
-      of the existing point
-    inlier_Radius : float
-      Point considered an outlier if more than inlier_Radius away from any 
-      other points
-
-    Returns
-    ----------
-    points : (n,3) float
-      The (x,y,z) of the processed and filtered pointcloud
-    colors : (n,3) float
-      The (r,g,b) color information corresponding to the points
-    vote : (n, ) int
-      The number of vote (seen duplicate points within the voxel_radius) each 
-      processed point has reveived
     """
+   Merge segments so that new points will not be add to the merged
+   model if within voxel_Radius to the existing points, and keep a vote
+   for if the point is issolated outside the radius of inlier_Radius at 
+   the timeof the merge
 
-     for point_id in trange(len(originals)):
+   Parameters
+   ----------
+   originals : List of open3d.Pointcloud classe
+     6D pontcloud of the segments transformed into the world frame
+   voxel_Radius : float
+     Reject duplicate point if the new point lies within the voxel radius
+     of the existing point
+   inlier_Radius : float
+     Point considered an outlier if more than inlier_Radius away from any 
+     other points
 
-          if point_id == 0:
-               vote = np.zeros(len(originals[point_id].points))
-               points = np.array(originals[point_id].points,dtype = np.float64)
-               colors = np.array(originals[point_id].colors,dtype = np.float64)
+   Returns
+   ----------
+   points : (n,3) float
+     The (x,y,z) of the processed and filtered pointcloud
+   colors : (n,3) float
+     The (r,g,b) color information corresponding to the points
+   vote : (n, ) int
+     The number of vote (seen duplicate points within the voxel_radius) each 
+     processed point has reveived
+   """
 
-          else:
-       
-               points_temp = np.array(originals[point_id].points,dtype = np.float64)
-               colors_temp = np.array(originals[point_id].colors,dtype = np.float64)
-               
-               dist , index = nearest_neighbour(points_temp, points)
-               new_points = np.where(dist > voxel_Radius)
-               points_temp = points_temp[new_points]
-               colors_temp = colors_temp[new_points]
-               inliers = np.where(dist < inlier_Radius)
-               vote[(index[inliers],)] += 1
-               vote = np.concatenate([vote, np.zeros(len(points_temp))])
-               points = np.concatenate([points, points_temp])
-               colors = np.concatenate([colors, colors_temp])
+    for point_id in trange(len(originals)):
 
-     return (points,colors,vote) 
+        if point_id == 0:
+            vote = np.zeros(len(originals[point_id].points))
+            points = np.array(originals[point_id].points, dtype=np.float64)
+            colors = np.array(originals[point_id].colors, dtype=np.float64)
 
-def load_pcds(path, downsample = True, interval = 1):
+        else:
 
+            points_temp = np.array(
+                originals[point_id].points, dtype=np.float64)
+            colors_temp = np.array(
+                originals[point_id].colors, dtype=np.float64)
+
+            dist, index = nearest_neighbour(points_temp, points)
+            new_points = np.where(dist > voxel_Radius)
+            points_temp = points_temp[new_points]
+            colors_temp = colors_temp[new_points]
+            inliers = np.where(dist < inlier_Radius)
+            vote[(index[inliers],)] += 1
+            vote = np.concatenate([vote, np.zeros(len(points_temp))])
+            points = np.concatenate([points, points_temp])
+            colors = np.concatenate([colors, colors_temp])
+
+    return (points, colors, vote)
+
+
+def load_pcds(path, downsample=True, interval=1):
     """
     load pointcloud by path and down samle (if True) based on voxel_size 
 
     """
-    
 
-    global voxel_size, camera_intrinsics, plane_equation 
-    pcds= []
-    
-    for Filename in trange(int(len(glob.glob1(path+"JPEGImages","*.jpg"))/interval)):
+    global voxel_size, camera_intrinsics, plane_equation
+    pcds = []
+
+    for Filename in trange(int(len(glob.glob1(path+"JPEGImages", "*.jpg"))/interval)):
         img_file = path + 'JPEGImages/%s.jpg' % (Filename*interval)
-        
+
         cad = cv2.imread(img_file)
         cad = cv2.cvtColor(cad, cv2.COLOR_BGR2RGB)
         depth_file = path + 'depth/%s.png' % (Filename*interval)
@@ -123,50 +125,59 @@ def load_pcds(path, downsample = True, interval = 1):
         mask = depth.copy()
         depth = convert_depth_frame_to_pointcloud(depth, camera_intrinsics)
 
-        aruco_center = get_aruco_center(cad,depth)
+        aruco_center = get_aruco_center(cad, depth)
         # remove plane and anything underneath the plane from the pointcloud
-        sol = findplane(cad,depth)
-        distance = point_to_plane(depth,sol)
-        sol = fitplane(sol,depth[(distance > -0.01) & (distance < 0.01)])
+        sol = findplane(cad, depth)
+        try:
+            distance = point_to_plane(depth, sol)
+        except Exception as e:
+            print(e)
+            continue
+        sol = fitplane(sol, depth[(distance > -0.01) & (distance < 0.01)])
         # record the plane equation on the first frame for point projections
         if Filename == 0:
-             plane_equation = sol
-        distance = point_to_plane(depth,sol)
+            plane_equation = sol
+        distance = point_to_plane(depth, sol)
         mask[distance < 0.002] = 0
 
         # use statistical outlier remover to remove isolated noise from the scene
         distance2center = np.linalg.norm(depth - aruco_center, axis=2)
         mask[distance2center > MAX_RADIUS] = 0
         source = open3d.PointCloud()
-        source.points = open3d.Vector3dVector(depth[mask>0])
-        source.colors = open3d.Vector3dVector(cad[mask>0])
+        source.points = open3d.Vector3dVector(depth[mask > 0])
+        source.colors = open3d.Vector3dVector(cad[mask > 0])
 
-        cl,ind = open3d.statistical_outlier_removal(source,nb_neighbors=500, std_ratio=0.5)
+        cl, ind = open3d.statistical_outlier_removal(
+            source, nb_neighbors=500, std_ratio=0.5)
 
         if downsample == True:
-            pcd_down = open3d.voxel_down_sample(cl, voxel_size = voxel_size)
-            open3d.estimate_normals(pcd_down, KDTreeSearchParamHybrid(radius = 0.002 * 2, max_nn = 30))
+            pcd_down = open3d.voxel_down_sample(cl, voxel_size=voxel_size)
+            open3d.estimate_normals(
+                pcd_down, KDTreeSearchParamHybrid(radius=0.002 * 2, max_nn=30))
             pcds.append(pcd_down)
         else:
             pcds.append(cl)
     return pcds
 
-def get_aruco_center(cad,d):
-     gray = cv2.cvtColor(cad, cv2.COLOR_BGR2GRAY)
-     aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
-     parameters = aruco.DetectorParameters_create()
-     #lists of ids and the corners beloning to each id
-     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-     XYZ = []
-     if np.all(ids != None):
-          for index,cornerset in enumerate(corners):
-               cornerset = cornerset[0]
-               for corner in cornerset:
-                    if d[int(corner[1])][int(corner[0])][2]!= 0:
-                         XYZ.append(d[int(corner[1])][int(corner[0])])
 
-     XYZ = np.asarray(XYZ)
-     return np.mean(XYZ, axis = 0)
+def get_aruco_center(cad, d):
+    gray = cv2.cvtColor(cad, cv2.COLOR_BGR2GRAY)
+    aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
+    parameters = aruco.DetectorParameters_create()
+    # lists of ids and the corners beloning to each id
+    corners, ids, rejectedImgPoints = aruco.detectMarkers(
+        gray, aruco_dict, parameters=parameters)
+    XYZ = []
+    if np.all(ids != None):
+        for index, cornerset in enumerate(corners):
+            cornerset = cornerset[0]
+            for corner in cornerset:
+                if d[int(corner[1])][int(corner[0])][2] != 0:
+                    XYZ.append(d[int(corner[1])][int(corner[0])])
+
+    XYZ = np.asarray(XYZ)
+    return np.mean(XYZ, axis=0)
+
 
 def nearest_neighbour(a, b):
     """
@@ -190,26 +201,28 @@ def nearest_neighbour(a, b):
 
 def normalize(v):
     norm = np.linalg.norm(v)
-    if norm == 0: 
-       return v
+    if norm == 0:
+        return v
     return v/norm
 
 
 def print_usage():
-    
+
     print("Usage: register_segmented.py <path>")
     print("path: all or name of the folder")
     print("e.g., register_segmented.py all, register_segmented.py LINEMOD/Cheezit")
-    
-def point_to_plane2(X,p):
-    
+
+
+def point_to_plane2(X, p):
+
     plane_xyz = p[0:3]
     distance = (plane_xyz*X).sum(axis=1) + p[3]
     distance = distance / np.linalg.norm(plane_xyz)
     return distance
 
+
 if __name__ == "__main__":
-  
+
     try:
         if sys.argv[1] == "all":
             folders = glob.glob("LINEMOD/*/")
@@ -223,35 +236,36 @@ if __name__ == "__main__":
         exit()
 
     for path in folders:
-        
+
         print(path)
         with open(path+'intrinsics.json', 'r') as f:
-             camera_intrinsics = json.load(f)
+            camera_intrinsics = json.load(f)
 
         Ts = np.load(path + 'transforms.npy')
 
-
         print("Load and segment frames")
-        originals = load_pcds(path, downsample = False, interval = RECONSTRUCTION_INTERVAL)     
+        originals = load_pcds(path, downsample=False,
+                              interval=RECONSTRUCTION_INTERVAL)
         for point_id in range(len(originals)):
-             originals[point_id].transform(Ts[int(RECONSTRUCTION_INTERVAL/LABEL_INTERVAL)*point_id])
+            originals[point_id].transform(
+                Ts[int(RECONSTRUCTION_INTERVAL/LABEL_INTERVAL)*point_id])
 
         print("Apply post processing")
-        points, colors, vote = post_process(originals, voxel_Radius, inlier_Radius)
-        points = points[vote>1]
-        colors = colors[vote>1]
+        points, colors, vote = post_process(
+            originals, voxel_Radius, inlier_Radius)
+        points = points[vote > 1]
+        colors = colors[vote > 1]
 
         if FILLBOTTOM:
-             plane_norm = normalize(np.array(plane_equation[:3]))
-             distance = point_to_plane2(points, plane_equation)
-             projections = np.subtract(points,
+            plane_norm = normalize(np.array(plane_equation[:3]))
+            distance = point_to_plane2(points, plane_equation)
+            projections = np.subtract(points,
                                       np.array([plane_norm*(i) for i in distance]))
-             points = np.concatenate((points, projections), axis=0)
-             colors = np.concatenate((colors, colors), axis=0)
+            points = np.concatenate((points, projections), axis=0)
+            colors = np.concatenate((colors, colors), axis=0)
 
         ply = Ply(points, colors)
         meshfile = path + 'registeredScene.ply'
 
         ply.write(meshfile)
         print("Mesh saved")
-
