@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Check Poses",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "--destination",
+                "all",
+
+            ]
+        },
+        {
             "name": "Python: File corrente",
             "type": "python",
             "request": "launch",
@@ -31,7 +43,9 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["all"]
+            "args": [
+                "all"
+            ]
         }
     ]
 }
