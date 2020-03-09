@@ -350,13 +350,13 @@ if __name__ == "__main__":
           
 
           print(path)
-
-          with open(path+'intrinsics.json', 'r') as f:
+          intrinsics_path = os.path.join(path, 'intrinsics.json')
+          with open(intrinsics_path, 'r') as f:
                camera_intrinsics = json.load(f)
 
           Ts = []
-
-          n_pcds = int(len(glob.glob1(path+"JPEGImages","*.jpg"))/LABEL_INTERVAL)
+          jpgs = os.path.join(path, "JPEGImages", "*.jpg")
+          n_pcds = int(len(glob.glob1(jpgs))/LABEL_INTERVAL)
           print("Full registration ...")
           pose_graph = full_registration(path, max_correspondence_distance_coarse,
                                         max_correspondence_distance_fine)
@@ -372,12 +372,13 @@ if __name__ == "__main__":
 
 
 
-          num_annotations = int(len(glob.glob1(path+"JPEGImages","*.jpg"))/LABEL_INTERVAL)
+          num_annotations = int(len(glob.glob1(jpgs))/LABEL_INTERVAL)
 
           for point_id in range(num_annotations):
                Ts.append(pose_graph.nodes[point_id].pose)
           Ts = np.array(Ts)
-          filename = path + 'transforms.npy'
+          # filename = path + 'transforms.npy'
+          filename = os.path.join(path, 'transforms.npy')
           np.save(filename, Ts)
           print("Transforms saved")
 

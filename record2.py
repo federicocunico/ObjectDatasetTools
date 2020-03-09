@@ -58,6 +58,11 @@ def print_usage():
     print("e.g., record2.py LINEMOD/mug")
 
 
+def is_blurry(img, th=200):
+    laplacian_var = cv2.Laplacian(img, cv2.CV_64F).var()
+    return laplacian_var < th
+
+
 if __name__ == "__main__":
     args = parser.parse_args()
     try:
@@ -131,6 +136,10 @@ if __name__ == "__main__":
         # Visualize count down
 
         if time.time() - T_start > 5:
+
+            if is_blurry(c):
+                continue
+
             # filecad= folder+"JPEGImages/%s.jpg" % FileName
             # filedepth= folder+"depth/%s.png" % FileName
             filecad = os.path.join(

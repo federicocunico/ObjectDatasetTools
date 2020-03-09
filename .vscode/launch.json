@@ -34,7 +34,7 @@
                 "--warn_user",
                 "True",
                 "--record_duration",
-                "30"
+                "120"
             ]
         },
         {
