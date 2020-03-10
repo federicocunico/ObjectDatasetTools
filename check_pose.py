@@ -72,15 +72,15 @@ def project_points(pts3d, RT, K, opencv=False):
     return pts2d
 
 
-def draw_model(rgb, pts3d, pose, K):
+def draw_model(rgb, pts3d, pose, K, radius=1):
     pts2d = project_points(pts3d, pose, K)
     for p in pts2d:
         if len(p.shape) > 1:
             center = int(round(p[0, 0])), int(round(p[0, 1]))
         else:
             center = int(round(p[0])), int(round(p[1]))
-        rgb = cv2.circle(rgb, center=center, radius=1,
-                         color=(255, 0, 0), thickness=1)
+        rgb = cv2.circle(rgb, center=center, radius=radius,
+                         color=(255, 0, 0), thickness=radius)
     return rgb
 
 
@@ -148,9 +148,10 @@ if __name__ == "__main__":
 
         # projection
         for i, p in enumerate(tqdm(poses)):
+            p = np.linalg.inv(p)
             print(p)
             rgb = cv2.imread(rgbs[i])
-            rgb = draw_model(rgb, obj, p, K)
+            rgb = draw_model(rgb, obj, p, K, radius=2)
             cv2.imshow('rgb', rgb)
             view3d(translations[0:i, :], vis)
             if cv2.waitKey(1) == ord('q'):
