@@ -2,3 +2,5 @@ __pycache__/
 .vscode/
 LINEMOD/
 DONE/
+.idea/
+config/__pycache__/
