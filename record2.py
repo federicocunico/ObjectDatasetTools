@@ -32,7 +32,7 @@ logging.basicConfig(level=logging.INFO)
 parser = argparse.ArgumentParser(
     description='Record RGB and Depth using RealSense cameras')
 parser.add_argument('--destination', type=str,
-                    default=os.path.join('LINEMOD', 'new_acquistion'))
+                    default=os.path.join('LINEMOD', 'new_acquisition'))
 parser.add_argument('--rgb_folder', type=str, default='JPEGImages')
 parser.add_argument('--depth_folder', type=str, default='depth')
 parser.add_argument('--record_duration', type=int, default=60)
