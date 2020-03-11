@@ -111,6 +111,21 @@ def contains_points(vertexes, points_2d):
         return True
 
 
+def load_K(json_file):
+    import json
+
+    with open(json_file) as fp:
+        data = json.load(fp)
+    K = np.eye(3)
+    K[0, 0] = data['fx']
+    K[1, 1] = data['fy']
+
+    K[0, 2] = data['ppx']
+    K[1, 2] = data['ppy']
+
+    return K
+
+
 def main(root_path):
     # Defining  used paths
     # desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
@@ -182,14 +197,14 @@ def main(root_path):
     #                     [0., 573.57043, 242.04899],
     #                     [0., 0., 1.]])
 
-    kinect1 = np.array([[520., 0., 320.],
-                        [0., 520., 240.],
-                        [0., 0., 1.]])
+    # kinect1 = np.array([[520., 0., 320.],
+    #                     [0., 520., 240.],
+    #                     [0., 0., 1.]])
 
     resolution = (480, 640)
     # K[0, 2], K[1, 2] = resolution[1] // 2, resolution[0] // 2
 
-    current_K = kinect1
+    current_K = load_K(os.path.join(root_path, 'intrinsics.json'))
     i = 0
     for p in poses:
         print("\n \n Analyzing frame ", i)
@@ -258,7 +273,9 @@ def main(root_path):
 
         # mask out
         mask_image[mask_image > 0] = 1  # convert in binary
-        cv2.imshow('Masked Out', cv2.cvtColor(colorimg * np.stack((mask_image, mask_image, mask_image), axis=-1).astype(np.uint8), cv2.COLOR_RGB2BGR))
+        cv2.imshow('Masked Out',
+                   cv2.cvtColor(colorimg * np.stack((mask_image, mask_image, mask_image), axis=-1).astype(np.uint8),
+                                cv2.COLOR_RGB2BGR))
 
         mask_path = os.path.join(masks_path, "{}.png".format(str(i - 1)))
 
